@@ -1,80 +1,154 @@
-# Githubactions
+# 🚀 GitHub Actions
 
-**What is GITHB actions **
-  GitHub Actions are packaged scripts to automate tasks in a software-development workflow in GitHub
-  You can configure GitHub Actions to trigger complex workflows that meet your organization's needs.
-  The trigger can happen each time developers check new source code into a specific branch, at timed intervals, or manually.
+## 📌 What are GitHub Actions?
+GitHub Actions are **automated workflows** that help you build, test, and deploy your code directly inside GitHub.
 
-**Types of GitHub actions**
-  1. Container Actions
-  2. Javascript actions
-  3. Composit actions
+They allow you to:
+- Automate software development tasks  
+- Trigger workflows when:
+  - Code is pushed  
+  - Pull requests are created  
+  - On schedule  
+  - Manually  
+- Build complete CI/CD pipelines for your applications
 
-**Type	                Runs In	                        Best For	                          Example**
-Container Action	    Docker container	              Full control of environment	        Python + ffmpeg job
-JavaScript Action	    Node.js on GitHub runner	      Fast reusable logic	                Validate PR titles
-Composite Action	    Shell steps on runner	          Combining multiple steps	          Setup + install + test
+---
 
-**GitHub Actions Workflow Architecture**
-   → Workflow 
-      → Jobs
-        → Steps
-            → Actions / Commands
+## 📦 Types of GitHub Actions
 
-**Workflows**
-    1.Defined in **.github/workflows/*.yml**
-    2.Triggers based on events
-    (push, pull_request, schedule, manual, etc.)
-    3.Can contain one or **multiple jobs**
+### 1. **Container Actions**
+- Run inside a **Docker container**
+- Best for: custom environments, system dependencies  
+- Example: Python + FFmpeg build job
 
-    **Example: workflow.yml**
-      name: CI Pipeline
-      on: push
-      jobs: ...
-**Jobs**
-    A job is a group of steps that run on the same machine (runner).
-    Each job runs on a runner (Ubuntu, Windows, Mac)
-    Jobs can run:
-        in parallel (default)
-        in sequence (using needs:)
-    Example: jobs.yml
-    jobs:
-      build:
-        runs-on: ubuntu-latest
-      test:
-        runs-on: ubuntu-latest
-        needs: build
-**Steps**
-    Steps are individual tasks inside a job.
-    Run in order (top to bottom)
-    A step can:
-      run a shell command (run:)
-      use an action (uses:)
-    Example: steps.yml
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-    
-      - name: Install dependencies
-        run: npm install
-**Actions**
-  Actions are reusable components used inside steps.
-    1. Container Actions
-    2. Javascript actions
-    3. Composit actions
-    Example:
-      - uses: actions/setup-node@v4
+### 2. **JavaScript Actions**
+- Run directly on GitHub runners using Node.js  
+- Best for: fast, reusable logic  
+- Example: PR title validation
 
-**Runners**
-    A runner is a machine that executes your job.
-    GitHub provides:
+### 3. **Composite Actions**
+- Combine multiple shell steps or existing actions  
+- Best for: grouping repeated steps  
+- Example: Setup → Install → Test pipeline
 
-      ubuntu-latest
-      windows-latest
-      macos-latest
+### 📋 Comparison Table
 
+| Type              | Runs In             | Best For                       | Example                  |
+|-------------------|---------------------|--------------------------------|--------------------------|
+| Container Action  | Docker container    | Full control of environment    | Python + FFmpeg job      |
+| JavaScript Action | Node.js runner      | Fast reusable logic            | PR title validation      |
+| Composite Action  | Shell steps runner  | Combine multiple steps         | Setup → Install → Test   |
 
-    
+---
 
+## 🏛️ GitHub Actions Workflow Architecture
 
-  
+```
+
+Workflow
+→ Jobs
+→ Steps
+→ Actions / Commands
+
+````
+
+---
+
+## ⚙️ Workflows
+
+- Located in **`.github/workflows/*.yml`**
+- Triggered by:
+  - push  
+  - pull_request  
+  - schedule  
+  - manual dispatch  
+- Can contain **one or multiple jobs**
+
+### Example: `workflow.yml`
+
+```yaml
+name: CI Pipeline
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+````
+
+---
+
+## 🧩 Jobs
+
+A **job** is a group of steps that run on the same runner.
+
+Jobs can run:
+
+* **In parallel** (default)
+* **In sequence** using `needs:`
+
+### Example: `jobs.yml`
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+```
+
+---
+
+## 🔧 Steps
+
+Steps are **individual tasks** inside a job.
+
+A step can:
+
+* Run a shell command (`run:`)
+* Use a GitHub action (`uses:`)
+
+### Example: `steps.yml`
+
+```yaml
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
+
+  - name: Install dependencies
+    run: npm install
+```
+
+---
+
+## 🧱 Actions
+
+Actions are reusable components used inside steps.
+
+### Types:
+
+* Container Actions
+* JavaScript Actions
+* Composite Actions
+
+### Example:
+
+```yaml
+- uses: actions/setup-node@v4
+```
+
+---
+
+## 🖥️ Runners
+
+A **runner** is a machine that executes your job.
+
+GitHub provides:
+
+* `ubuntu-latest`
+* `windows-latest`
+* `macos-latest`
+
+You can also use **self-hosted runners** for custom environments.
