@@ -4,8 +4,6 @@ on:
   create:
     branches:
       - 'release/*'   # Trigger when changes are pushed to any release branch
-
-
 permissions:
   contents: write
   pull-requests: write
@@ -55,21 +53,12 @@ jobs:
           git commit -m "Bump patch version to ${NEW_VERSION}"
           git push origin version-bump/${NEW_VERSION}
 
-      - name: Debug Branch Names
-        run: |
-          echo "Release branch: ${{ env.RELEASE_BRANCH }}"
-          echo "New version: ${{ env.NEW_VERSION }}"
-          echo "Version bump branch: version-bump/${{ env.NEW_VERSION }}"
-
-
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Bump patch version to ${{ env.NEW_VERSION }}"
-          branch: version-bump/${{ env.NEW_VERSION }}   # FIXED
+          commit-message: "Bump patch version to ${NEW_VERSION}"
+          branch: version-bump/${NEW_VERSION}
           base: ${{ env.RELEASE_BRANCH }}
-          title: "Bump patch version to ${{ env.NEW_VERSION }}"
+          title: "Bump patch version to ${NEW_VERSION}"
           body: "Automated patch version bump."
-
-
