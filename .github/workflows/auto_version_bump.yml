@@ -58,8 +58,8 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Bump patch version to ${NEW_VERSION}"
-          branch: version-bump/${NEW_VERSION}
+          commit-message: "Bump patch version to ${{ env.NEW_VERSION }}"
+          branch: version-bump/${{ env.NEW_VERSION }}
           base: ${{ env.RELEASE_BRANCH }}
-          title: "Bump patch version to ${NEW_VERSION}"
+          title: "Bump patch version to ${{ env.NEW_VERSION }}"
           body: "Automated patch version bump."
