@@ -31,8 +31,8 @@ jobs:
         run: |
           git checkout "${{ github.ref_name }}"
 
-      # 4️⃣ Create a new branch from the release branch
-      - name: Create new version bump branch
+      # 4️⃣ Create new version bump branch from release branch
+      - name: Create new branch
         id: new_branch
         run: |
           NEW_BRANCH="auto/version-bump-${{ github.ref_name }}"
@@ -54,32 +54,32 @@ jobs:
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "Current version: $CURRENT"
 
-      - name: Bump version (patch +1)
+      # 7️⃣ Bump version (patch +1) on new branch
+      - name: Bump version
         id: bump
         run: |
           OLD="${{ steps.version.outputs.current }}"
           IFS='.' read -r major minor patch <<< "$OLD"
           NEW="$major.$minor.$((patch + 1))"
 
-          # Replace version in .csproj reliably
+          # Replace version reliably
           sed -i "s|<Version>.*</Version>|<Version>$NEW</Version>|" "${{ steps.find_csproj.outputs.csproj }}"
 
           echo "new=$NEW" >> $GITHUB_OUTPUT
           echo "New version: $NEW"
 
-
-      # 8️⃣ Commit and push the bumped version
-      - name: Commit the bumped version on new branch
+      # 8️⃣ Commit and push changes
+      - name: Commit and push bumped version
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
           git add "${{ steps.find_csproj.outputs.csproj }}"
-          git commit -m "Auto-bump version to ${{ steps.bump.outputs.new }}" || echo "No changes"
+          git commit -m "Auto-bump version to ${{ steps.bump.outputs.new }}" --allow-empty
           git push -u origin "${{ steps.new_branch.outputs.branch }}"
 
       # 9️⃣ Create Pull Request into release branch
-      - name: Create Pull Request into release branch
+      - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
           title: "Version bump to ${{ steps.bump.outputs.new }}"
