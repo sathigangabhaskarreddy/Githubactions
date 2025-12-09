@@ -5,12 +5,14 @@ on:
     branches:
       - 'release/*'   # Trigger when changes are pushed to any release branch
 
-jobs:
-  bump-version:
-    runs-on: ubuntu-latest
 permissions:
   contents: write
   pull-requests: write
+  
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
