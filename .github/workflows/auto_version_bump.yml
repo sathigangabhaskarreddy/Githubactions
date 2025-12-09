@@ -1,0 +1,66 @@
+name: Auto Version Bump on Release Branch
+
+on:
+  create:
+    branches:
+      - 'release/*'
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed to create PR
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Find .csproj file
+        id: find_csproj
+        run: |
+          FILE=$(find . -name "*.csproj" | head -n 1)
+          echo "csproj=$FILE" >> $GITHUB_OUTPUT
+
+      - name: Extract current version
+        id: version
+        run: |
+          CURRENT=$(grep -oPm1 "(?<=<Version>)[^<]+" "${{ steps.find_csproj.outputs.csproj }}")
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT"
+
+      - name: Bump version (patch +1)
+        id: bump
+        run: |
+          OLD="${{ steps.version.outputs.current }}"
+          IFS='.' read -r major minor patch <<< "$OLD"
+
+          NEW="$major.$minor.$((patch + 1))"
+
+          sed -i "s/<Version>$OLD<\/Version>/<Version>$NEW<\/Version>/g" \
+            "${{ steps.find_csproj.outputs.csproj }}"
+
+          echo "new=$NEW" >> $GITHUB_OUTPUT
+          echo "New version: $NEW"
+
+      - name: Commit the bumped version
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add "${{ steps.find_csproj.outputs.csproj }}"
+          git commit -m "Auto-bump version to ${{ steps.bump.outputs.new }}"
+          git push
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "Version bump to ${{ steps.bump.outputs.new }}"
+          body: |
+            Auto-generated PR to bump version in `.csproj`.
+          branch: "${{ github.ref_name }}"
+          base: "main"
