@@ -49,8 +49,8 @@ jobs:
 
       - name: Commit the bumped version
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git config user.name "sathigangabhaskarreddy"
+          git config user.email "bhaskarreddy15341@gmail.com"
 
           git add "${{ steps.find_csproj.outputs.csproj }}"
           git commit -m "Auto-bump version to ${{ steps.bump.outputs.new }}"
