@@ -1,101 +1,61 @@
-name: Auto Version Bump on Release Branch
+name: Version Bump Workflow
 
 on:
   create:
     branches:
-      - 'release/*'
-
-permissions:
-  contents: write
-  pull-requests: write
+      - 'release/*'   # Trigger when changes are pushed to any release branch
 
 jobs:
   bump-version:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
-      # 2️⃣ Setup .NET
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      # 3️⃣ Checkout release branch explicitly
-      - name: Checkout release branch
+      - name: Set up Git
         run: |
-          git checkout "${{ github.ref_name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # 4️⃣ Create new version bump branch from release branch
-      - name: Create new branch
-        id: new_branch
-        run: |
-          NEW_BRANCH="auto/version-bump-${{ github.ref_name }}"
-          echo "branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
-          git checkout -b "$NEW_BRANCH"
+      - name: Extract release branch name
+        id: branch
+        run: echo "RELEASE_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
 
-      # 5️⃣ Find the .csproj file
-      - name: Find .csproj file
-        id: find_csproj
-        run: |
-          FILE=$(find . -name "*.csproj" | head -n 1)
-          echo "csproj=$FILE" >> $GITHUB_OUTPUT
-
-      # 6️⃣ Extract current version on new branch
-      - name: Extract current version
+      - name: Determine new patch version
         id: version
         run: |
-          CURRENT=$(grep -oPm1 "(?<=<Version>)[^<]+" "${{ steps.find_csproj.outputs.csproj }}")
-          echo "current=$CURRENT" >> $GITHUB_OUTPUT
-          echo "Current version: $CURRENT"
+          csproj_file=$(find . -name '*.csproj' | head -n 1)
+          current_version=$(grep -oPm1 "(?<=<Version>)[^<]+" $csproj_file)
+          echo "Current version: $current_version"
+          IFS='.' read -r major minor patch <<< "$current_version"
+          new_patch=$((patch + 1))
+          new_version="$major.$minor.$new_patch"
+          echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+          echo "csproj_file=$csproj_file" >> $GITHUB_ENV
 
-      # 7️⃣ Bump version (patch +1) on new branch
-      - name: Bump version
-        id: bump
+      - name: Create version bump branch
         run: |
-          OLD="${{ steps.version.outputs.current }}"
-          IFS='.' read -r major minor patch <<< "$OLD"
-          NEW="$major.$minor.$((patch + 1))"
+          git checkout -b version-bump/${NEW_VERSION}
 
-          # Replace version reliably
-          sed -i "s|<Version>.*</Version>|<Version>$NEW</Version>|" "${{ steps.find_csproj.outputs.csproj }}"
-
-          echo "new=$NEW" >> $GITHUB_OUTPUT
-          echo "New version: $NEW"
-
-      # 7️⃣a Print updated .csproj content
-      - name: Show updated .csproj content
+      - name: Update csproj version
         run: |
-          echo "===== Updated .csproj ====="
-          cat "${{ steps.find_csproj.outputs.csproj }}"
-          echo "============================"
+          sed -i "s/<Version>.*<\/Version>/<Version>${NEW_VERSION}<\/Version>/g" ${{ env.csproj_file }}
+          sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>${NEW_VERSION}.0<\/AssemblyVersion>/g" ${{ env.csproj_file }}
+          sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>${NEW_VERSION}.0<\/FileVersion>/g" ${{ env.csproj_file }}
 
-      # 8️⃣ Commit and push changes
-      - name: Commit and push bumped version
+      - name: Commit changes
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git add ${{ env.csproj_file }}
+          git commit -m "Bump patch version to ${NEW_VERSION}"
+          git push origin version-bump/${NEW_VERSION}
 
-          echo "Files to commit:"
-          git status
-          git diff --name-only
-
-          git add "${{ steps.find_csproj.outputs.csproj }}"
-          git commit -m "Auto-bump version to ${{ steps.bump.outputs.new }}" --allow-empty
-          git push -u origin "${{ steps.new_branch.outputs.branch }}"
-
-      # 9️⃣ Create Pull Request into release branch
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v5
         with:
-          title: "Version bump to ${{ steps.bump.outputs.new }}"
-          body: |
-            Auto-generated PR to bump version in `.csproj`.
-          branch: "${{ steps.new_branch.outputs.branch }}"
-          base: "${{ github.ref_name }}"
-          draft: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Bump patch version to ${NEW_VERSION}"
+          branch: version-bump/${NEW_VERSION}
+          base: ${{ env.RELEASE_BRANCH }}
+          title: "Bump patch version to ${NEW_VERSION}"
+          body: "Automated patch version bump."
