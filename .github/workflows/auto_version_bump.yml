@@ -58,8 +58,32 @@ jobs:
           echo "branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
 
           git checkout -b "$NEW_BRANCH"
+      - name: Bump version (patch +1)
+        id: bump
+        run: |
+          OLD="${{ steps.version.outputs.current }}"
+          IFS='.' read -r major minor patch <<< "$OLD"
+          NEW="$major.$minor.$((patch + 1))"
 
-      - name: Commit the bumped version
+          sed -i "s/<Version>$OLD<\/Version>/<Version>$NEW<\/Version>/g" \
+            "${{ steps.find_csproj.outputs.csproj }}"
+
+          echo "new=$NEW" >> $GITHUB_OUTPUT
+          echo "New version: $NEW"
+
+      - name: Checkout release branch explicitly
+        run: |
+          git checkout "${{ github.ref_name }}"
+
+      - name: Create new version bump branch FROM release branch
+        id: new_branch
+        run: |
+          NEW_BRANCH="auto/version-bump-${{ github.ref_name }}"
+          echo "branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
+
+          git checkout -b "$NEW_BRANCH"
+
+      - name: Commit the bumped version ON new branch
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
@@ -68,13 +92,13 @@ jobs:
           git commit -m "Auto-bump version to ${{ steps.bump.outputs.new }}" || echo "No changes"
           git push -u origin "${{ steps.new_branch.outputs.branch }}"
 
-      - name: Create Pull Request
+      - name: Create Pull Request INTO the release branch
         uses: peter-evans/create-pull-request@v6
         with:
           title: "Version bump to ${{ steps.bump.outputs.new }}"
           body: |
             Auto-generated PR to bump version in `.csproj`.
           branch: "${{ steps.new_branch.outputs.branch }}"
-          base: "${{ github.ref_name }}"   # PR into the release branch
-          draft: true                      # (optional) prevent merging
+          base: "${{ github.ref_name }}"   # PR INTO release branch
+          draft: true
 
