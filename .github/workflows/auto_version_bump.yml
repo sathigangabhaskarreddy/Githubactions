@@ -14,22 +14,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 2️⃣ Setup .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
+      # 3️⃣ Find the .csproj file
       - name: Find .csproj file
         id: find_csproj
         run: |
           FILE=$(find . -name "*.csproj" | head -n 1)
           echo "csproj=$FILE" >> $GITHUB_OUTPUT
 
+      # 4️⃣ Extract current version
       - name: Extract current version
         id: version
         run: |
@@ -37,6 +41,20 @@ jobs:
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "Current version: $CURRENT"
 
+      # 5️⃣ Checkout release branch explicitly
+      - name: Checkout release branch explicitly
+        run: |
+          git checkout "${{ github.ref_name }}"
+
+      # 6️⃣ Create a new branch from the release branch
+      - name: Create new version bump branch FROM release branch
+        id: new_branch
+        run: |
+          NEW_BRANCH="auto/version-bump-${{ github.ref_name }}"
+          echo "branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
+          git checkout -b "$NEW_BRANCH"
+
+      # 7️⃣ Bump version on the new branch
       - name: Bump version (patch +1)
         id: bump
         run: |
@@ -50,18 +68,7 @@ jobs:
           echo "new=$NEW" >> $GITHUB_OUTPUT
           echo "New version: $NEW"
 
-      - name: Checkout release branch explicitly
-        run: |
-          git checkout "${{ github.ref_name }}"
-
-      - name: Create new version bump branch FROM release branch
-        id: new_branch
-        run: |
-          NEW_BRANCH="auto/version-bump-${{ github.ref_name }}"
-          echo "branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
-
-          git checkout -b "$NEW_BRANCH"
-
+      # 8️⃣ Commit the bumped version on new branch
       - name: Commit the bumped version ON new branch
         run: |
           git config user.name "github-actions"
@@ -71,6 +78,7 @@ jobs:
           git commit -m "Auto-bump version to ${{ steps.bump.outputs.new }}" || echo "No changes"
           git push -u origin "${{ steps.new_branch.outputs.branch }}"
 
+      # 9️⃣ Create Pull Request into release branch
       - name: Create Pull Request INTO the release branch
         uses: peter-evans/create-pull-request@v6
         with:
