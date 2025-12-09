@@ -68,11 +68,22 @@ jobs:
           echo "new=$NEW" >> $GITHUB_OUTPUT
           echo "New version: $NEW"
 
+      # 7️⃣a Print updated .csproj content
+      - name: Show updated .csproj content
+        run: |
+          echo "===== Updated .csproj ====="
+          cat "${{ steps.find_csproj.outputs.csproj }}"
+          echo "============================"
+
       # 8️⃣ Commit and push changes
       - name: Commit and push bumped version
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
+
+          echo "Files to commit:"
+          git status
+          git diff --name-only
 
           git add "${{ steps.find_csproj.outputs.csproj }}"
           git commit -m "Auto-bump version to ${{ steps.bump.outputs.new }}" --allow-empty
