@@ -1,11 +1,10 @@
 name: Version Bump Workflow
 
-# on:
-#   create:
-#     branches:
-#       - 'release/*'   # Trigger when changes are pushed to any release branch
+on:
+  create:
+    branches:
+      - 'release/*'   # Trigger when changes are pushed to any release branch
 
-on: workflow_dispatch
 
 permissions:
   contents: write
