@@ -54,7 +54,6 @@ jobs:
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "Current version: $CURRENT"
 
-      # 7️⃣ Bump version (patch +1) on new branch
       - name: Bump version (patch +1)
         id: bump
         run: |
@@ -62,11 +61,12 @@ jobs:
           IFS='.' read -r major minor patch <<< "$OLD"
           NEW="$major.$minor.$((patch + 1))"
 
-          sed -i "s/<Version>$OLD<\/Version>/<Version>$NEW<\/Version>/g" \
-            "${{ steps.find_csproj.outputs.csproj }}"
+          # Replace version in .csproj reliably
+          sed -i "s|<Version>.*</Version>|<Version>$NEW</Version>|" "${{ steps.find_csproj.outputs.csproj }}"
 
           echo "new=$NEW" >> $GITHUB_OUTPUT
           echo "New version: $NEW"
+
 
       # 8️⃣ Commit and push the bumped version
       - name: Commit the bumped version on new branch
