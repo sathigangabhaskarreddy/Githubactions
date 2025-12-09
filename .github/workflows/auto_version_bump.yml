@@ -51,14 +51,22 @@ jobs:
           echo "new=$NEW" >> $GITHUB_OUTPUT
           echo "New version: $NEW"
 
+      - name: Create new version bump branch
+        id: new_branch
+        run: |
+          NEW_BRANCH="auto/version-bump-${{ github.ref_name }}"
+          echo "branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
+
+          git checkout -b "$NEW_BRANCH"
+
       - name: Commit the bumped version
         run: |
-          git config user.name "sathigangabhaskarreddy"
-          git config user.email "bhaskarreddy15341@gmail.com"
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
 
           git add "${{ steps.find_csproj.outputs.csproj }}"
-          git commit -m "Auto-bump version to ${{ steps.bump.outputs.new }}"
-          git push
+          git commit -m "Auto-bump version to ${{ steps.bump.outputs.new }}" || echo "No changes"
+          git push -u origin "${{ steps.new_branch.outputs.branch }}"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
@@ -66,5 +74,7 @@ jobs:
           title: "Version bump to ${{ steps.bump.outputs.new }}"
           body: |
             Auto-generated PR to bump version in `.csproj`.
-          branch: "${{ github.ref_name }}"
-          base: "main"
+          branch: "${{ steps.new_branch.outputs.branch }}"
+          base: "${{ github.ref_name }}"   # PR into the release branch
+          draft: true                      # (optional) prevent merging
+
