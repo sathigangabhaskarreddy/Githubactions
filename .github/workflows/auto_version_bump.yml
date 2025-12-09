@@ -17,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # needed to create PR
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -37,27 +37,6 @@ jobs:
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "Current version: $CURRENT"
 
-      - name: Bump version (patch +1)
-        id: bump
-        run: |
-          OLD="${{ steps.version.outputs.current }}"
-          IFS='.' read -r major minor patch <<< "$OLD"
-
-          NEW="$major.$minor.$((patch + 1))"
-
-          sed -i "s/<Version>$OLD<\/Version>/<Version>$NEW<\/Version>/g" \
-            "${{ steps.find_csproj.outputs.csproj }}"
-
-          echo "new=$NEW" >> $GITHUB_OUTPUT
-          echo "New version: $NEW"
-
-      - name: Create new version bump branch
-        id: new_branch
-        run: |
-          NEW_BRANCH="auto/version-bump-${{ github.ref_name }}"
-          echo "branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
-
-          git checkout -b "$NEW_BRANCH"
       - name: Bump version (patch +1)
         id: bump
         run: |
@@ -99,6 +78,5 @@ jobs:
           body: |
             Auto-generated PR to bump version in `.csproj`.
           branch: "${{ steps.new_branch.outputs.branch }}"
-          base: "${{ github.ref_name }}"   # PR INTO release branch
+          base: "${{ github.ref_name }}"
           draft: true
-
