@@ -53,3 +53,23 @@ jobs:
           git add ${{ env.csproj_file }}
           git commit -m "Bump patch version to ${NEW_VERSION}"
           git push origin version-bump/${NEW_VERSION}
+
+      - name: Create Pull Request
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const base = process.env.RELEASE_BRANCH;
+            const head = "version-bump/${{ env.NEW_VERSION }}";
+
+            const result = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Bump patch version to ${process.env.NEW_VERSION}`,
+              head: head,
+              base: base,
+              body: "Automated patch version bump."
+            });
+
+            console.log("PR URL:", result.data.html_url);
+
