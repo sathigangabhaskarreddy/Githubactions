@@ -1,7 +1,7 @@
 name: Version Bump Workflow
 
 on:
-  create:
+  push:
     branches:
       - 'release/*'   # Trigger when changes are pushed to any release branch
 permissions:
