@@ -1,0 +1,55 @@
+name: Version Bump Workflow 1
+
+on:
+  create:
+    branches:
+      - 'release/*'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract release branch name
+        run: echo "RELEASE_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+
+      - name: Determine new patch version
+        id: version
+        run: |
+          csproj_file=$(find . -name '*.csproj' | head -n 1)
+          current_version=$(grep -oPm1 "(?<=<Version>)[^<]+" $csproj_file)
+          IFS='.' read -r major minor patch <<< "$current_version"
+          new_patch=$((patch + 1))
+          new_version="$major.$minor.$new_patch"
+          echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+          echo "CSPROJ=$csproj_file" >> $GITHUB_ENV
+
+      - name: Update csproj version
+        run: |
+          sed -i "s/<Version>.*<\/Version>/<Version>${NEW_VERSION}<\/Version>/g" ${{ env.CSPROJ }}
+          sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>${NEW_VERSION}.0<\/AssemblyVersion>/g" ${{ env.CSPROJ }}
+          sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>${NEW_VERSION}.0<\/FileVersion>/g" ${{ env.CSPROJ }}
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Bump version to ${NEW_VERSION}"
+          branch: version-bump/${NEW_VERSION}     # temporary branch
+          base: ${{ env.RELEASE_BRANCH }}         # target branch (release-2)
+          title: "Bump version to ${NEW_VERSION}"
+          body: "Automated patch version bump."
+
+      - name: Show PR Number
+        run: echo "PR Number: ${{ steps.cpr.outputs.pull-request-number }}"
+
+      - name: Show PR URL
+        run: echo "PR URL: ${{ steps.cpr.outputs.pull-request-url }}"
