@@ -53,12 +53,3 @@ jobs:
           git add ${{ env.csproj_file }}
           git commit -m "Bump patch version to ${NEW_VERSION}"
           git push origin version-bump/${NEW_VERSION}
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: version-bump/${NEW_VERSION}
-          base: ${{ env.RELEASE_BRANCH }}
-          title: "Bump patch version to ${NEW_VERSION}"
-          body: "Automated patch version bump."
