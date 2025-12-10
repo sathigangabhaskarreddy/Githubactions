@@ -1,64 +1,64 @@
-name: Version Bump Workflow
+# name: Version Bump Workflow
 
-on:
-  push:
-    branches:
-      - 'release/*'   # Trigger when changes are pushed to any release branch
-permissions:
-  contents: write
-  pull-requests: write
+# on:
+#   push:
+#     branches:
+#       - 'release/*'   # Trigger when changes are pushed to any release branch
+# permissions:
+#   contents: write
+#   pull-requests: write
   
-jobs:
-  bump-version:
-    runs-on: ubuntu-latest
+# jobs:
+#   bump-version:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
 
-      - name: Set up Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+#       - name: Set up Git
+#         run: |
+#           git config user.name "github-actions[bot]"
+#           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Extract release branch name
-        id: branch
-        run: echo "RELEASE_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+#       - name: Extract release branch name
+#         id: branch
+#         run: echo "RELEASE_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
 
-      - name: Determine new patch version
-        id: version
-        run: |
-          csproj_file=$(find . -name '*.csproj' | head -n 1)
-          current_version=$(grep -oPm1 "(?<=<Version>)[^<]+" $csproj_file)
-          echo "Current version: $current_version"
-          IFS='.' read -r major minor patch <<< "$current_version"
-          new_patch=$((patch + 1))
-          new_version="$major.$minor.$new_patch"
-          echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
-          echo "csproj_file=$csproj_file" >> $GITHUB_ENV
+#       - name: Determine new patch version
+#         id: version
+#         run: |
+#           csproj_file=$(find . -name '*.csproj' | head -n 1)
+#           current_version=$(grep -oPm1 "(?<=<Version>)[^<]+" $csproj_file)
+#           echo "Current version: $current_version"
+#           IFS='.' read -r major minor patch <<< "$current_version"
+#           new_patch=$((patch + 1))
+#           new_version="$major.$minor.$new_patch"
+#           echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+#           echo "csproj_file=$csproj_file" >> $GITHUB_ENV
 
-      - name: Create version bump branch
-        run: |
-          git checkout -b version-bump/${NEW_VERSION}
+#       - name: Create version bump branch
+#         run: |
+#           git checkout -b version-bump/${NEW_VERSION}
 
-      - name: Update csproj version
-        run: |
-          sed -i "s/<Version>.*<\/Version>/<Version>${NEW_VERSION}<\/Version>/g" ${{ env.csproj_file }}
-          sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>${NEW_VERSION}.0<\/AssemblyVersion>/g" ${{ env.csproj_file }}
-          sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>${NEW_VERSION}.0<\/FileVersion>/g" ${{ env.csproj_file }}
+#       - name: Update csproj version
+#         run: |
+#           sed -i "s/<Version>.*<\/Version>/<Version>${NEW_VERSION}<\/Version>/g" ${{ env.csproj_file }}
+#           sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>${NEW_VERSION}.0<\/AssemblyVersion>/g" ${{ env.csproj_file }}
+#           sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>${NEW_VERSION}.0<\/FileVersion>/g" ${{ env.csproj_file }}
 
-      - name: Commit changes
-        run: |
-          git add ${{ env.csproj_file }}
-          git commit -m "Bump patch version to ${NEW_VERSION}"
-          git push origin version-bump/${NEW_VERSION}
+#       - name: Commit changes
+#         run: |
+#           git add ${{ env.csproj_file }}
+#           git commit -m "Bump patch version to ${NEW_VERSION}"
+#           git push origin version-bump/${NEW_VERSION}
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Bump patch version to ${NEW_VERSION}"
-          branch: version-bump/${NEW_VERSION}
-          base: ${{ env.RELEASE_BRANCH }}
-          title: "Bump patch version to ${NEW_VERSION}"
-          body: "Automated patch version bump."
+#       - name: Create Pull Request
+#         uses: peter-evans/create-pull-request@v5
+#         with:
+#           token: ${{ secrets.GITHUB_TOKEN }}
+#           commit-message: "Bump patch version to ${NEW_VERSION}"
+#           branch: version-bump/${NEW_VERSION}
+#           base: ${{ env.RELEASE_BRANCH }}
+#           title: "Bump patch version to ${NEW_VERSION}"
+#           body: "Automated patch version bump."
