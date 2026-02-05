@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Create tag and PR
-        uses: ./.github/actions/release-to-master
+        uses: ./.github/actions/release-to-master@main
         with:
           tag: ${{ inputs.tag }}
           token: ${{ secrets.token }}
