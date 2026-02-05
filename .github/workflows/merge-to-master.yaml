@@ -1,0 +1,20 @@
+name: Release to Master
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (example: v1.2.0)"
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create tag and PR
+        uses: ./.github/actions/release-to-master
+        with:
+          tag: ${{ inputs.tag }}
+          token: ${{ secrets.token }}
