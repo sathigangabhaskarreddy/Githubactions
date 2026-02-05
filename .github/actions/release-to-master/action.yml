@@ -80,7 +80,7 @@ runs:
       run: |
         set -euo pipefail
     
-        BASE="master"
+        BASE="main"
         HEAD="ReleaseToMaster"
     
         git fetch origin "$BASE" "$HEAD"
