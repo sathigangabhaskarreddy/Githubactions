@@ -62,13 +62,39 @@ runs:
         git checkout -b "$BRANCH"
         git push -u origin "$BRANCH"
 
+    # - name: Create PR to master
+    #   shell: bash
+    #   env:
+    #     GH_TOKEN: ${{ inputs.token }}
+    #   run: |
+    #     gh pr create \
+    #       --base main \
+    #       --head ReleaseToMaster \
+    #       --title "${GITHUB_REF_NAME} → master (${{ inputs.tag }})" \
+    #       --body "Automated PR created from \`${GITHUB_REF_NAME}\` with tag \`${{ inputs.tag }}\`."
+
     - name: Create PR to master
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
       run: |
-        gh pr create \
-          --base main \
-          --head ReleaseToMaster \
-          --title "${GITHUB_REF_NAME} → master (${{ inputs.tag }})" \
-          --body "Automated PR created from \`${GITHUB_REF_NAME}\` with tag \`${{ inputs.tag }}\`."
+        set -euo pipefail
+    
+        BASE="master"
+        HEAD="ReleaseToMaster"
+    
+        git fetch origin "$BASE" "$HEAD"
+    
+        # Check if there are commits to merge
+        if git log origin/${BASE}..origin/${HEAD} --oneline | grep -q .; then
+          echo "Commits found. Creating PR."
+    
+          gh pr create \
+            --base "$BASE" \
+            --head "$HEAD" \
+            --title "${GITHUB_REF_NAME} → master (${{ inputs.tag }})" \
+            --body "Automated PR created from \`${GITHUB_REF_NAME}\` with tag \`${{ inputs.tag }}\`."
+        else
+          echo "No commits between $BASE and $HEAD. Skipping PR creation."
+        fi
+
