@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (example: v1.2.0)"
         required: true
         type: string
 
@@ -13,8 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Create tag and PR
-        uses: ./.github/actions/release-to-master@main
+        uses: ./.github/actions/release-to-master
         with:
           tag: ${{ inputs.tag }}
-          token: ${{ secrets.token }}
+          token: ${{ secrets.TOKEN }}
