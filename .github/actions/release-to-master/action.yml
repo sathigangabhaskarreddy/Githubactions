@@ -123,4 +123,3 @@ runs:
         else
           echo "No commits between $BASE and $HEAD. Skipping PR creation."
         fi
-
