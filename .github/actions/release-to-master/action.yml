@@ -40,9 +40,12 @@ runs:
         git checkout "$RELEASE_BRANCH"
         git pull origin "$RELEASE_BRANCH"
 
-        if git rev-parse "${{ inputs.tag }}" >/dev/null 2>&1; then
-          echo "Tag already exists: ${{ inputs.tag }}"
-          exit 1
+        if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+          echo "Tag already exists: $TAG — skipping tag creation"
+        else
+          echo "Creating tag: $TAG"
+          git tag "$TAG"
+          git push origin "$TAG"
         fi
 
         git tag "${{ inputs.tag }}"
