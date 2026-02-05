@@ -12,37 +12,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # - name: Checkout repository
-    #   uses: actions/checkout@v4
-    #   with:
-    #     fetch-depth: 0
-    #     token: ${{ inputs.token }}
-    - name: Checkout latest release branch
-      shell: bash
-      run: |
-        set -euo pipefail
-    
-        git fetch origin
-    
-        # Get latest release-* branch (sorted by version/date, newest first)
-        RELEASE_BRANCH=$(git branch -r \
-          | sed 's|origin/||' \
-          | grep '^release-' \
-          | sort -V \
-          | tail -n 1)
-    
-        if [ -z "$RELEASE_BRANCH" ]; then
-          echo "❌ No release-* branch found"
-          exit 1
-        fi
-    
-        echo "✅ Latest release branch: $RELEASE_BRANCH"
-    
-        git checkout "$RELEASE_BRANCH"
-        git pull origin "$RELEASE_BRANCH"
-    
-        echo "RELEASE_BRANCH=$RELEASE_BRANCH" >> $GITHUB_ENV
-
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ inputs.token }}
 
     - name: Configure Git
       shell: bash
