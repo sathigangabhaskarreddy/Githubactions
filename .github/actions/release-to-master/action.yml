@@ -12,11 +12,37 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ inputs.token }}
+    # - name: Checkout repository
+    #   uses: actions/checkout@v4
+    #   with:
+    #     fetch-depth: 0
+    #     token: ${{ inputs.token }}
+    - name: Checkout latest release branch
+      shell: bash
+      run: |
+        set -euo pipefail
+    
+        git fetch origin
+    
+        # Get latest release-* branch (sorted by version/date, newest first)
+        RELEASE_BRANCH=$(git branch -r \
+          | sed 's|origin/||' \
+          | grep '^release-' \
+          | sort -V \
+          | tail -n 1)
+    
+        if [ -z "$RELEASE_BRANCH" ]; then
+          echo "❌ No release-* branch found"
+          exit 1
+        fi
+    
+        echo "✅ Latest release branch: $RELEASE_BRANCH"
+    
+        git checkout "$RELEASE_BRANCH"
+        git pull origin "$RELEASE_BRANCH"
+    
+        echo "RELEASE_BRANCH=$RELEASE_BRANCH" >> $GITHUB_ENV
+
 
     - name: Configure Git
       shell: bash
@@ -40,13 +66,13 @@ runs:
         git checkout "$RELEASE_BRANCH"
         git pull origin "$RELEASE_BRANCH"
 
-        if git rev-parse "${{ inputs.tag }}" >/dev/null 2>&1; then
-          echo "Tag already exists: ${{ inputs.tag }}"
-          exit 1
+        if git rev-parse "refs/tags/${{ inputs.tag }}" >/dev/null 2>&1; then
+          echo "Tag already exists: ${{ inputs.tag }} — skipping tag creation"
+        else
+          echo "Creating tag: ${{ inputs.tag }}"
+          git tag "${{ inputs.tag }}"
+          git push origin "${{ inputs.tag }}"
         fi
-
-        git tag "${{ inputs.tag }}"
-        git push origin "${{ inputs.tag }}"
 
     - name: Create ReleaseToMaster branch
       shell: bash
@@ -62,13 +88,38 @@ runs:
         git checkout -b "$BRANCH"
         git push -u origin "$BRANCH"
 
+    # - name: Create PR to master
+    #   shell: bash
+    #   env:
+    #     GH_TOKEN: ${{ inputs.token }}
+    #   run: |
+    #     gh pr create \
+    #       --base main \
+    #       --head ReleaseToMaster \
+    #       --title "${GITHUB_REF_NAME} → master (${{ inputs.tag }})" \
+    #       --body "Automated PR created from \`${GITHUB_REF_NAME}\` with tag \`${{ inputs.tag }}\`."
+
     - name: Create PR to master
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
       run: |
-        gh pr create \
-          --base main \
-          --head ReleaseToMaster \
-          --title "${GITHUB_REF_NAME} → master (${{ inputs.tag }})" \
-          --body "Automated PR created from \`${GITHUB_REF_NAME}\` with tag \`${{ inputs.tag }}\`."
+        set -euo pipefail
+    
+        BASE="main"
+        HEAD="ReleaseToMaster"
+    
+        git fetch origin "$BASE" "$HEAD"
+    
+        # Check if there are commits to merge
+        if git log origin/${BASE}..origin/${HEAD} --oneline | grep -q .; then
+          echo "Commits found. Creating PR."
+    
+          gh pr create \
+            --base "$BASE" \
+            --head "$HEAD" \
+            --title "${GITHUB_REF_NAME} → master (${{ inputs.tag }})" \
+            --body "Automated PR created from \`${GITHUB_REF_NAME}\` with tag \`${{ inputs.tag }}\`."
+        else
+          echo "No commits between $BASE and $HEAD. Skipping PR creation."
+        fi
