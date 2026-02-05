@@ -1,0 +1,74 @@
+name: "Create Tag and PR from Release to Master"
+description: "Creates a tag from the triggering release branch and opens PR to master"
+
+inputs:
+  tag:
+    description: "Git tag to create (example: v1.2.0)"
+    required: true
+  token:
+    description: "PAT to authenticate GitHub"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ inputs.token }}
+
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+    - name: Create tag from release branch
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        RELEASE_BRANCH="${GITHUB_REF_NAME}"
+
+        if [[ ! "$RELEASE_BRANCH" =~ ^release- ]]; then
+          echo "This workflow must be run from a release-* branch"
+          exit 1
+        fi
+
+        git fetch origin
+        git checkout "$RELEASE_BRANCH"
+        git pull origin "$RELEASE_BRANCH"
+
+        if git rev-parse "${{ inputs.tag }}" >/dev/null 2>&1; then
+          echo "Tag already exists: ${{ inputs.tag }}"
+          exit 1
+        fi
+
+        git tag "${{ inputs.tag }}"
+        git push origin "${{ inputs.tag }}"
+
+    - name: Create ReleaseToMaster branch
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        BRANCH="ReleaseToMaster"
+
+        if git ls-remote --exit-code --heads origin "$BRANCH"; then
+          git push origin --delete "$BRANCH"
+        fi
+
+        git checkout -b "$BRANCH"
+        git push -u origin "$BRANCH"
+
+    - name: Create PR to master
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        gh pr create \
+          --base master \
+          --head ReleaseToMaster \
+          --title "${GITHUB_REF_NAME} → master (${{ inputs.tag }})" \
+          --body "Automated PR created from \`${GITHUB_REF_NAME}\` with tag \`${{ inputs.tag }}\`."
