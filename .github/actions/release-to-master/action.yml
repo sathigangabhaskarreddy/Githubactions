@@ -48,9 +48,6 @@ runs:
           git push origin "${{ inputs.tag }}"
         fi
 
-        git tag "${{ inputs.tag }}"
-        git push origin "${{ inputs.tag }}"
-
     - name: Create ReleaseToMaster branch
       shell: bash
       run: |
