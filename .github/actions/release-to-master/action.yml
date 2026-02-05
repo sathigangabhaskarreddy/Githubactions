@@ -68,7 +68,7 @@ runs:
         GH_TOKEN: ${{ inputs.token }}
       run: |
         gh pr create \
-          --base master \
+          --base main \
           --head ReleaseToMaster \
           --title "${GITHUB_REF_NAME} → master (${{ inputs.tag }})" \
           --body "Automated PR created from \`${GITHUB_REF_NAME}\` with tag \`${{ inputs.tag }}\`."
